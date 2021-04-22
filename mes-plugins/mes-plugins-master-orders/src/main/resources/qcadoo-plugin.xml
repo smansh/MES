@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    ***************************************************************************
+    Copyright (c) 2010 Qcadoo Limited
+    Project: Qcadoo MES
+    Version: 1.4
+
+    This file is part of Qcadoo.
+
+    Qcadoo is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation; either version 3 of the License,
+    or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty
+    of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+    ***************************************************************************
+
+-->
+<plugin plugin="masterOrders" group="planning" version="${qcadoo.plugin.version}"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schema.qcadoo.org/plugin"
+        xmlns:model="http://schema.qcadoo.org/modules/model" xmlns:view="http://schema.qcadoo.org/modules/view"
+        xmlns:menu="http://schema.qcadoo.org/modules/menu"
+        xmlns:localization="http://schema.qcadoo.org/modules/localization"
+        xsi:schemaLocation="http://schema.qcadoo.org/plugin
+       http://schema.qcadoo.org/plugin.xsd
+       http://schema.qcadoo.org/modules/model
+       http://schema.qcadoo.org/modules/model.xsd
+       http://schema.qcadoo.org/modules/view
+       http://schema.qcadoo.org/modules/view.xsd
+       http://schema.qcadoo.org/modules/localization
+       http://schema.qcadoo.org/modules/localization.xsd
+       http://schema.qcadoo.org/modules/menu
+       http://schema.qcadoo.org/modules/menu.xsd">
+
+    <information>
+        <name>Qcadoo MES :: Plugins :: Sales orders</name>
+        <vendor>
+            <name>Qcadoo Limited</name>
+            <url>http://www.qcadoo.com/</url>
+        </vendor>
+        <description>Higher level order which many production orders must fulfill. Sales orders often represent actual
+            orders for
+            clients for many products.
+        </description>
+        <license>AGPL</license>
+    </information>
+
+    <dependencies>
+        <dependency>
+            <plugin>orders</plugin>
+            <version>[0.4.0</version>
+        </dependency>
+        <dependency>
+            <plugin>lineChangeoverNormsForOrders</plugin>
+            <version>[1.4.0</version>
+        </dependency>
+        <dependency>
+            <plugin>deliveries</plugin>
+            <version>[1.4.0</version>
+        </dependency>
+    </dependencies>
+
+    <modules>
+        <localization:translation path="locales"/>
+
+        <model:model model="masterOrder" resource="model/masterOrder.xml"/>
+        <model:model model="masterOrderDefinition" resource="model/masterOrderDefinition.xml"/>
+        <model:model model="masterOrderProduct" resource="model/masterOrderProduct.xml"/>
+        <model:model model="masterOrderPositionDto" resource="model/masterOrderPositionDto.xml"/>
+        <model:model model="masterOrderDto" resource="model/masterOrderDto.xml"/>
+        <model:model model="generatingOrdersHelper" resource="model/generatingOrdersHelper.xml"/>
+
+        <model:model model="productsBySizeHelper" resource="model/productsBySizeHelper.xml"/>
+        <model:model model="productsBySizeEntryHelper" resource="model/productsBySizeEntryHelper.xml"/>
+        <model:model model="salesPlan" resource="model/salesPlan.xml"/>
+        <model:model model="salesPlanProduct" resource="model/salesPlanProduct.xml"/>
+        <model:model model="salesPlanStateChange" resource="model/salesPlanStateChange.xml"/>
+        <model:model model="salesPlanProductDto" resource="model/salesPlanProductDto.xml"/>
+        <model:model model="salesPlanMaterialRequirement" resource="model/salesPlanMaterialRequirement.xml"/>
+        <model:model model="salesPlanMaterialRequirementProduct" resource="model/salesPlanMaterialRequirementProduct.xml"/>
+
+        <model:model model="ordersGenerationHelper" resource="model/ordersGenerationHelper.xml"/>
+
+        <model:model model="salesPlanOrdersGroupHelper" resource="model/salesPlanOrdersGroupHelper.xml"/>
+        <model:model model="salesPlanOrdersGroupEntryHelper" resource="model/salesPlanOrdersGroupEntryHelper.xml"/>
+
+
+        <model:model-field plugin="basic" model="product">
+            <model:hasMany name="salesPlanProducts" model="salesPlanProduct" plugin="masterOrders" joinField="product"/>
+        </model:model-field>
+
+        <model:model-field plugin="technologies" model="technology">
+            <model:hasMany name="salesPlanProducts" model="salesPlanProduct" plugin="masterOrders" joinField="technology"/>
+        </model:model-field>
+
+        <model:model-field plugin="basic" model="product">
+            <model:hasMany name="salesPlanMaterialRequirementProducts" model="salesPlanMaterialRequirementProduct" plugin="masterOrders" joinField="product"/>
+        </model:model-field>
+
+        <model:model-field plugin="basic" model="sizeGroup">
+            <model:hasMany name="salesPlanMaterialRequirementProducts" model="salesPlanMaterialRequirementProduct" plugin="masterOrders" joinField="sizeGroup"/>
+        </model:model-field>
+
+        <model:model-field plugin="basic" model="company">
+            <model:hasMany name="salesPlanMaterialRequirementProducts" model="salesPlanMaterialRequirementProduct" plugin="masterOrders" joinField="supplier"/>
+        </model:model-field>
+
+        <model:model-field plugin="basic" model="shift">
+            <model:hasMany name="salesPlanStateChanges"
+                           plugin="masterOrders" model="salesPlanStateChange"
+                           joinField="shift"/>
+        </model:model-field>
+
+        <model:dictionary name="masterOrderState"/>
+        <model:dictionary name="masterOrderPositionStatus"/>
+
+        <model:model-field model="parameter" plugin="basic">
+            <model:boolean name="sameOrderNumber" default="false"/>
+        </model:model-field>
+
+        <model:model-field model="parameter" plugin="basic">
+            <model:boolean name="copyDescription" default="false"/>
+        </model:model-field>
+
+        <model:model-field model="parameter" plugin="basic">
+            <model:boolean name="ordersGenerationNotCompleteDates" default="false"/>
+        </model:model-field>
+        <model:model-field model="parameter" plugin="basic">
+            <model:boolean name="completeMasterOrderAfterOrderingPositions" default="false"/>
+        </model:model-field>
+        <model:model-field model="parameter" plugin="basic">
+            <model:hasMany name="masterOrderDefinitions" model="masterOrderDefinition" plugin="masterOrders"
+                           joinField="parameter" cascade="nullify"/>
+        </model:model-field>
+
+        <model:model-field plugin="basic" model="parameter">
+            <model:file name="additionalImage">
+                <model:validatesWith
+                        class="com.qcadoo.mes.masterOrders.validators.ParameterValidatorsMO"
+                        method="validatesWith"/>
+            </model:file>
+        </model:model-field>
+
+        <model:model-field model="order" plugin="orders">
+            <model:belongsTo name="salesPlan" model="salesPlan"
+                             plugin="masterOrders" lazy="true"/>
+        </model:model-field>
+
+        <model:model-field model="order" plugin="orders">
+            <model:belongsTo name="masterOrder" model="masterOrder"
+                             plugin="masterOrders" lazy="true"/>
+        </model:model-field>
+
+
+        <model:model-field model="orderListDto" plugin="orders">
+            <model:belongsTo name="masterOrder" model="masterOrder"
+                             plugin="masterOrders" persistent="false"/>
+        </model:model-field>
+
+        <model:model-field model="order" plugin="orders">
+            <model:belongsTo name="masterOrderProductComponent" model="masterOrderProduct"
+                             plugin="masterOrders" lazy="true"/>
+        </model:model-field>
+
+        <model:model-field model="order" plugin="orders">
+            <model:belongsTo name="masterOrderProduct" model="product"
+                             plugin="basic" lazy="true"/>
+        </model:model-field>
+
+        <model:model-field plugin="basic" model="address">
+            <model:hasMany name="masterOrders" model="masterOrder" plugin="masterOrders" joinField="address"/>
+        </model:model-field>
+
+        <model:model-hook model="order" plugin="orders">
+            <model:validatesWith class="com.qcadoo.mes.masterOrders.validators.OrderValidatorsMO"
+                                 method="checkProductAndTechnology"/>
+        </model:model-hook>
+        <model:model-hook model="order" plugin="orders">
+            <model:validatesWith class="com.qcadoo.mes.masterOrders.validators.OrderValidatorsMO"
+                                 method="checkCompanyAndDeadline"/>
+        </model:model-hook>
+        <model:model-hook model="order" plugin="orders">
+            <model:validatesWith class="com.qcadoo.mes.masterOrders.validators.OrderValidatorsMO"
+                                 method="checkOrderNumber"/>
+        </model:model-hook>
+
+        <model:model-hook model="order" plugin="orders">
+            <model:onSave class="com.qcadoo.mes.masterOrders.hooks.OrderHooksMO"
+                                 method="onSave"/>
+        </model:model-hook>
+
+        <model:model-enum-value plugin="basic" model="log" enum="logType" value="masterOrderImport"/>
+
+        <menu:menu-item name="masterOrders" category="orders"
+                        view="masterOrdersList" defaultAuthorizationRole="ROLE_PLANNING"/>
+
+        <menu:menu-item name="masterOrderPositions" category="orders" view="masterOrderPositionsList"
+                        defaultAuthorizationRole="ROLE_PLANNING"/>
+
+        <menu:menu-item name="salesPlansList" category="orders"
+                        view="salesPlansList" defaultAuthorizationRole="ROLE_PLANNING"/>
+
+        <menu:menu-item name="salesPlanMaterialRequirementsList" category="requirements"
+                        view="salesPlanMaterialRequirementsList" defaultAuthorizationRole="ROLE_PLANNING"/>
+
+        <view:view resource="view/masterOrdersList.xml"/>
+        <view:view resource="view/masterOrderDetails.xml"/>
+
+        <view:view resource="view/masterOrdersImport.xml"/>
+        <view:view resource="view/masterOrderProductDetails.xml"/>
+
+        <view:view resource="view/masterOrderDefinitionDetails.xml"/>
+
+        <view:view resource="view/masterOrderPositionsList.xml"/>
+        <view:view resource="view/generatingOrders.xml"/>
+
+        <view:view resource="view/productsBySize.xml"/>
+
+        <view:view resource="view/salesPlansList.xml"/>
+        <view:view resource="view/salesPlanDetails.xml"/>
+        <view:view resource="view/salesPlanProductDetails.xml"/>
+        <view:view resource="view/orderedProductsForFamily.xml"/>
+        <view:view resource="view/salesPlanMaterialRequirementsList.xml"/>
+        <view:view resource="view/salesPlanMaterialRequirementDetails.xml"/>
+
+        <view:view resource="view/ordersGenerationFromProducts.xml"/>
+
+        <view:view resource="view/salesPlanOrdersGroup.xml"/>
+
+        <view:view resource="view/salesPlanOrders.xml"/>
+
+        <view:view-ribbon-group resource="view/ribbonExtensions/productsList.xml"/>
+
+        <view:view-tab resource="view/tabExtensions/orderDetails.xml"/>
+        <view:view-tab resource="view/tabExtensions/masterOrderDefinitionsParameters.xml"/>
+
+        <view:view-grid-column plugin="orders" view="ordersList" component="grid">
+            <view:column name="masterOrderNumber" fields="masterOrderNumber" orderable="true" searchable="true"
+                         width="50"/>
+        </view:view-grid-column>
+        <view:view-grid-column plugin="orders" view="ordersList" component="grid">
+            <view:column name="masterOrderDefinitionNumber" fields="masterOrderDefinitionNumber"
+                         orderable="true" searchable="true" width="50"/>
+        </view:view-grid-column>
+
+        <view:view-grid-column plugin="orders"
+                               view="ordersPlanningList" component="grid">
+            <view:column name="masterOrderNumber" fields="masterOrderNumber" orderable="true" multiSearch="true" searchable="true"
+                         width="50"/>
+        </view:view-grid-column>
+
+        <view:view-hook plugin="orders" view="orderDetails"
+                        type="beforeRender"
+                        class="com.qcadoo.mes.masterOrders.hooks.OrderDetailsHooksMO"
+                        method="fillMasterOrderFields"/>
+
+        <view:view-listener plugin="basic" view="productsList"
+                            component="grid" event="generateOrders"
+                            class="com.qcadoo.mes.masterOrders.listeners.ProductsListListenersMO"
+                            method="generateOrders"/>
+
+        <view:resource uri="public/**/*"/>
+
+    </modules>
+
+    <features>
+        <end-user/>
+    </features>
+
+</plugin>
